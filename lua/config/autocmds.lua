@@ -6,3 +6,22 @@
 --
 -- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
 -- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
+
+vim.api.nvim_create_autocmd("BufWritePre", {
+  group = vim.api.nvim_create_augroup("eslint_fix", { clear = true }),
+  callback = function(ev)
+    local clients = vim.lsp.get_clients({ bufnr = ev.buf, name = "eslint" })
+    if #clients > 0 then
+      local client = clients[1]
+      client:request_sync("workspace/executeCommand", {
+        command = "eslint.applyAllFixes",
+        arguments = {
+          {
+            uri = vim.uri_from_bufnr(ev.buf),
+            version = vim.lsp.util.buf_versions[ev.buf],
+          },
+        },
+      }, 3000, ev.buf)
+    end
+  end,
+})
